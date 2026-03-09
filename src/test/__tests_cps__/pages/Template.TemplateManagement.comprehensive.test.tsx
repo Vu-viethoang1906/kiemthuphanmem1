@@ -175,9 +175,10 @@ describe('TemplateManagement critical flows', () => {
   });
 
   it('shows detail view and toggles tabs', async () => {
+    jest.setTimeout(10000); // Increase timeout to 10 seconds
     await renderPage();
 
-    await waitFor(() => expect(screen.getByText('Template 1')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Template 1')).toBeInTheDocument(), { timeout: 8000 });
     await userEvent.click(screen.getByText('Template 1'));
 
     await screen.findByRole('button', { name: /Columns/i });

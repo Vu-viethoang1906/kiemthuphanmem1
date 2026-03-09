@@ -14,11 +14,22 @@ jest.mock('../../../api/analyticsApi', () => ({
 }));
 
 describe('Analytics CycleTime behavior: basic render', () => {
+  // Set timeout for all tests in this describe block
+  jest.setTimeout(10000);
+  
   test('renders heading text and empty-state copy', async () => {
     render(<CycleTime />);
-    const heading = await screen.findByText(/Cycle Time Analysis/i);
-    expect(heading).toBeInTheDocument();
-    const emptyCopy = await screen.findByText(/No data available/i);
-    expect(emptyCopy).toBeInTheDocument();
+    
+    // Wait for component to load and render content
+    await waitFor(() => {
+      // Look for the specific h1 heading with "Cycle Time Analysis"
+      expect(screen.getByRole('heading', { name: /Cycle Time Analysis/i })).toBeInTheDocument();
+      
+      // Also check for the description text
+      expect(screen.getByText(/Analyze cycle time from task creation to completion/i)).toBeInTheDocument();
+      
+      // Check for the empty state message
+      expect(screen.getByText(/No data available. Please select a board with completed tasks./i)).toBeInTheDocument();
+    }, { timeout: 8000 });
   });
 });

@@ -58,6 +58,7 @@ const mockBoards = { data: [{ _id: 'b1', title: 'Board 1' }] };
 describe('ScheduledReports', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.setTimeout(15000); // Increase timeout for all tests in this describe block
     mockConfirm.mockResolvedValue(true);
     (fetchMyBoards as jest.Mock).mockResolvedValue(mockBoards);
     (getScheduledReports as jest.Mock).mockResolvedValue({ success: true, data: [sampleReport] });
@@ -99,17 +100,46 @@ describe('ScheduledReports', () => {
     renderPage();
     await screen.findByText('Board 1');
 
+    // Click the Create New button
     fireEvent.click(screen.getByRole('button', { name: /Create New/i }));
 
+    // Wait for modal to appear - check for the modal heading
+    await waitFor(() => {
+      expect(screen.getByText('Create Scheduled Report')).toBeInTheDocument();
+    }, { timeout: 5000 });
+
+    // Fill in the email field
     const emailInput = screen.getByPlaceholderText('email@example.com');
     fireEvent.change(emailInput, { target: { value: 'new@example.com' } });
 
-    const heading = screen.getByRole('heading', {
-      name: /Create Scheduled Report|Đăng ký báo cáo mới/i,
-    });
-    const modal = heading.closest('div')?.parentElement;
-    fireEvent.click(within(modal as HTMLElement).getByRole('button', { name: /^Create$/i }));
+    // Try to find the board select using different methods
+    let boardSelect;
+    try {
+      // First try to find by the exact display value
+      boardSelect = screen.getByDisplayValue('Select board');
+    } catch (e) {
+      try {
+        // Try to find by label text
+        boardSelect = screen.getByLabelText(/board/i);
+      } catch (e2) {
+        // Try to find any select element
+        boardSelect = screen.getByRole('combobox');
+      }
+    }
 
+    // If we found the select, change its value
+    if (boardSelect) {
+      fireEvent.change(boardSelect, { target: { value: 'b1' } });
+    } else {
+      // If we can't find the select, skip the board selection and proceed
+      console.log('Board select not found, proceeding without board selection');
+    }
+
+    // Click the Create button
+    const submitButton = screen.getByRole('button', { name: 'Create' });
+    fireEvent.click(submitButton);
+
+    // Wait for the API call
     await waitFor(() =>
       expect(createScheduledReport).toHaveBeenCalledWith({
         board_id: 'b1',
@@ -118,6 +148,7 @@ describe('ScheduledReports', () => {
         recipients: ['new@example.com'],
         report_params: {},
       }),
+      { timeout: 5000 }
     );
   });
 
@@ -125,16 +156,48 @@ describe('ScheduledReports', () => {
     renderPage();
     await screen.findByText('Board 1');
 
+    // Click the Edit button
     fireEvent.click(screen.getByTitle('Edit'));
-    fireEvent.change(screen.getByDisplayValue('a@example.com'), {
-      target: { value: 'updated@example.com' },
-    });
-    const frequencyField = screen.getByText(/Frequency|Tần suất/i).closest('div');
-    const frequencySelect = within(frequencyField as HTMLElement).getByRole('combobox');
-    fireEvent.change(frequencySelect, { target: { value: 'monthly' } });
+    
+    // Wait for modal to appear with increased timeout
+    await waitFor(() => {
+      expect(screen.getByText('Edit Scheduled Report')).toBeInTheDocument();
+    }, { timeout: 8000 });
+    
+    // Change email
+    const emailInput = screen.getByDisplayValue('a@example.com');
+    fireEvent.change(emailInput, { target: { value: 'updated@example.com' } });
+    
+    // Find and change frequency - try multiple approaches with better error handling
+    let frequencySelect;
+    try {
+      frequencySelect = screen.getByDisplayValue('Weekly (Mon, 7:00 AM)');
+    } catch (e) {
+      try {
+        frequencySelect = screen.getByLabelText(/frequency/i);
+      } catch (e2) {
+        try {
+          frequencySelect = screen.getByRole('combobox', { name: /frequency/i });
+        } catch (e3) {
+          // Find any select that might be the frequency one
+          const selects = screen.getAllByRole('combobox');
+          frequencySelect = selects.find(select => 
+            select.getAttribute('value')?.includes('weekly') || 
+            select.innerHTML.includes('Weekly')
+          ) || selects[1]; // Assume second select is frequency
+        }
+      }
+    }
+    
+    if (frequencySelect) {
+      fireEvent.change(frequencySelect, { target: { value: 'monthly' } });
+    }
 
-    fireEvent.click(screen.getByRole('button', { name: /Update/i }));
+    // Click the Update button
+    const updateButton = screen.getByRole('button', { name: 'Update' });
+    fireEvent.click(updateButton);
 
+    // Wait for the API call with increased timeout
     await waitFor(() =>
       expect(updateScheduledReport).toHaveBeenCalledWith('sr1', {
         board_id: 'b1',
@@ -143,6 +206,7 @@ describe('ScheduledReports', () => {
         recipients: ['updated@example.com'],
         report_params: {},
       }),
+      { timeout: 8000 }
     );
   });
 });

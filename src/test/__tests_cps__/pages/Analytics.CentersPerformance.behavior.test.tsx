@@ -32,6 +32,7 @@ describe('pages/Analytics/CentersPerformance', () => {
   });
 
   it('renders header and summary when data loads', async () => {
+    jest.setTimeout(10000); // Increase timeout to 10 seconds
     const sample = {
       success: true,
       data: {

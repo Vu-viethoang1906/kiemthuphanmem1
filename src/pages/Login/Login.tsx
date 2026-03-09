@@ -3,7 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import "../../styles/login.css";
-import { useAuth } from "../../auth/useKeycloak";
 import { socket } from "../../socket";
 import SplashScreen from "../../components/SplashScreen";
 import { getUlrLogo } from "../../api/logoApi";
@@ -16,7 +15,6 @@ const Login: React.FC = () => {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null
   );
-  const { login } = useAuth(); // chỉ giữ login SSO
   const navigate = useNavigate();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
@@ -230,20 +228,6 @@ const Login: React.FC = () => {
             <div className="sd">
               <button type="submit" className="dangnhapbtn" disabled={loading}>
                 {loading ? "Logging in..." : "Login"}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center text-center text-muted mb-2">
-              or
-            </div>
-
-            <div className="btcg">
-              <button
-                type="button"
-                className="cg1d"
-                onClick={() => login()} //  chỉ gọi login SSO, không navigate dashboard nữa
-              >
-                Login with CodeGym ID
               </button>
             </div>
 

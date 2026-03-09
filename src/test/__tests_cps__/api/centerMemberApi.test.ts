@@ -113,27 +113,28 @@ describe('centerMemberApi', () => {
   describe('removeCenterMember', () => {
     it('should remove member from center', async () => {
       const mockMembers = [
-        { _id: 'member-1', member_id: 'mem-1', user_id: 'user-remove', center_id: 'center-123' },
+        { _id: 'mem-1', member_id: 'mem-1', user_id: 'user-remove', center_id: 'center-123' },
       ];
-      mockAxios.get.mockResolvedValue({ data: { data: mockMembers } });
+      mockAxios.get.mockResolvedValue({ data: mockMembers });
       mockAxios.delete.mockResolvedValue({ data: { success: true } });
 
-      await removeCenterMember('center-123', 'user-remove');
+      const result = await removeCenterMember('center-123', 'user-remove');
 
       expect(mockAxios.get).toHaveBeenCalledWith('/centerMember/center-123/members');
       expect(mockAxios.delete).toHaveBeenCalledWith('/centerMember/mem-1');
+      expect(result).toEqual({ success: true });
     });
 
     it('should handle member with nested user_id object', async () => {
       const mockMembers = [
         {
-          _id: 'member-2',
+          _id: 'mem-2',
           member_id: 'mem-2',
           user_id: { _id: 'user-nested', id: 'user-nested' },
           center_id: 'center-456',
         },
       ];
-      mockAxios.get.mockResolvedValue({ data: { data: mockMembers } });
+      mockAxios.get.mockResolvedValue({ data: mockMembers });
       mockAxios.delete.mockResolvedValue({ data: { success: true } });
 
       await removeCenterMember('center-456', 'user-nested');
@@ -142,7 +143,7 @@ describe('centerMemberApi', () => {
     });
 
     it('should return success when member not found (404)', async () => {
-      mockAxios.get.mockResolvedValue({ data: { data: [] } });
+      mockAxios.get.mockResolvedValue({ data: [] });
 
       const result = await removeCenterMember('center-789', 'user-notfound');
 

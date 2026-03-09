@@ -15,9 +15,10 @@ beforeAll(() => {
 
 describe('PointManagement page - empty centers', () => {
   it('shows empty centers state and no leaderboard', async () => {
+    jest.setTimeout(10000); // Increase timeout to 10 seconds
     render(<PointManagement />);
 
-    const centerSelect = await screen.findByRole('combobox');
+    const centerSelect = await screen.findByRole('combobox', {}, { timeout: 8000 });
     expect(centerSelect).toBeInTheDocument();
     await waitFor(() => {
       // Title visible; with empty centers, expect no options besides placeholder

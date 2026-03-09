@@ -36,6 +36,27 @@ describe('Login page behavior', () => {
     expect((rememberCheckbox as HTMLInputElement).checked).toBe(true);
   });
 
+  it('should remember email when remember checkbox is checked', async () => {
+    jest.spyOn(axios, 'post').mockResolvedValue({
+      data: { success: true, data: { token: 't', refreshToken: 'rt', user: { id: '1', email: 'test@cg.com', role: 'user', roles: ['user'] } } }
+    });
+    
+    render(<Login />);
+    const emailInput = screen.getByPlaceholderText(/username or email/i);
+    const rememberCheckbox = screen.getByLabelText(/remember account/i);
+    const passwordInput = screen.getByPlaceholderText(/password/i);
+    const loginButton = screen.getByRole('button', { name: /^login$/i });
+    
+    await userEvent.type(emailInput, 'test@cg.com');
+    await userEvent.type(passwordInput, 'password');
+    await userEvent.click(rememberCheckbox);
+    await userEvent.click(loginButton);
+    
+    await waitFor(() => {
+      expect(localStorage.getItem('remember_email')).toBe('test@cg.com');
+    });
+  });
+
   it('logs in admin user -> splash then navigate /admin', async () => {
     jest.useFakeTimers();
     jest.spyOn(axios, 'post').mockResolvedValue({
@@ -89,11 +110,5 @@ describe('Login page behavior', () => {
     jest.advanceTimersByTime(2500);
   });
 
-  it('invokes SSO login handler', async () => {
-    const loginSpy = jest.fn();
-    (jest.requireMock('../../../auth/useKeycloak') as any).useAuth = () => ({ login: loginSpy });
-    render(<Login />);
-    await userEvent.click(screen.getByRole('button', { name: /login with codegym id/i }));
-    expect(loginSpy).toHaveBeenCalled();
-  });
+  // SSO login button removed from UI: login page should only support local login.
 });

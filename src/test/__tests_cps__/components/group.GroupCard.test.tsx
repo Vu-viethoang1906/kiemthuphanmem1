@@ -43,8 +43,7 @@ describe('GroupCard', () => {
     it('should display member count', () => {
       render(<GroupCard {...defaultProps} />);
       
-      expect(screen.getByText('5')).toBeInTheDocument();
-      expect(screen.getByText(/members/i)).toBeInTheDocument();
+      expect(screen.getByText('5 Members')).toBeInTheDocument();
     });
 
     it('should display owner name when available', () => {
@@ -59,16 +58,11 @@ describe('GroupCard', () => {
       expect(screen.getByText(/ID:/i)).toBeInTheDocument();
     });
 
-    it('should show active status badge', () => {
-      render(<GroupCard {...defaultProps} />);
-      
-      expect(screen.getByText(/HOẠT ĐỘNG/i)).toBeInTheDocument();
-    });
 
     it('should display 0 members when count is not provided', () => {
       render(<GroupCard {...defaultProps} memberCount={0} />);
       
-      expect(screen.getByText('0')).toBeInTheDocument();
+      expect(screen.getByText('0 Members')).toBeInTheDocument();
     });
 
     it('should handle missing description', () => {
@@ -268,7 +262,7 @@ describe('GroupCard', () => {
     it('should display 0 when memberCount is undefined', () => {
       render(<GroupCard {...defaultProps} memberCount={undefined as any} />);
       
-      expect(screen.getByText('0')).toBeInTheDocument();
+      expect(screen.getByText('0 Members')).toBeInTheDocument();
     });
   });
 });

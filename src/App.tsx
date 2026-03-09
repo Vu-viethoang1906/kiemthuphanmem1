@@ -355,12 +355,10 @@ function AnimatedRoutes() {
             <Navigate
               to={
                 isAdmin
-                  ? `/admin/project/${window.location.pathname.split('/')[2]}/${
-                      window.location.pathname.split('/')[3]
-                    }`
-                  : `/dashboard/project/${
-                      window.location.pathname.split('/')[2]
-                    }/${window.location.pathname.split('/')[3]}`
+                  ? `/admin/project/${window.location.pathname.split('/')[2]}/${window.location.pathname.split('/')[3]
+                  }`
+                  : `/dashboard/project/${window.location.pathname.split('/')[2]
+                  }/${window.location.pathname.split('/')[3]}`
               }
               replace
             />
