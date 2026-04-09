@@ -40,7 +40,10 @@ export const deleteFile = async (fileId: string) => {
   return res.data;
 };
 
-export const importFileTask = async (data: FormData) => {
+export const importFileTask = async (
+  data: FormData,
+  options?: { createNewBoard?: boolean; boardName?: string }
+) => {
   if (!(data instanceof FormData)) {
     throw new Error("Invalid data: must be FormData");
   }
@@ -50,6 +53,10 @@ export const importFileTask = async (data: FormData) => {
   }
 
   const res = await axiosInstance.post("/tasks/import", data, {
+    params: {
+      createNewBoard: options?.createNewBoard ? "true" : undefined,
+      boardName: options?.boardName || undefined,
+    },
     headers: {
       "Content-Type": "multipart/form-data",
     },

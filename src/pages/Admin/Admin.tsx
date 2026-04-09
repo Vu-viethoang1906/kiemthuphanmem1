@@ -19,9 +19,6 @@ const Admin: React.FC = () => {
     () => [
       { label: "Dashboard", path: "/admin" },
       { label: "Throughput", path: "/admin/analytics/throughput" },
-      { label: "Completion", path: "/admin/analytics/completion" },
-      { label: "Cycle Time", path: "/admin/analytics/cycle-time" },
-      { label: "Centers", path: "/admin/analytics/centers-performance" },
       { label: "Health", path: "/admin/analytics/board-health-score" },
       { label: "Points", path: "/admin/analytics/point-management" },
       { label: "Risk", path: "/admin/analytics/at-risk" },
@@ -86,13 +83,10 @@ const Admin: React.FC = () => {
   };
 
   const [mainMenu, setMainMenu] = useState<MenuItem[]>([
-    { name: "Introduction", icon: "introduction", path: "/admin/introduction" },
     { name: "Dashboard", icon: "dashboard", path: "/admin" },
     { name: "Projects", icon: "projects", path: "/admin/projects" },
     { name: "Backlog", icon: "reports", iconUrl: "/icons/scrum.png", path: "/admin/backlog" },
     { name: "Reports", icon: "reports", path: "/admin/reports" },
-    { name: "Scheduled Reports", icon: "reports", iconUrl: "/icons/schedule.png", path: "/admin/reports/scheduled" },
-    { name: "WorkControl", icon: "reports", iconUrl: "/icons/workcontrol.png", path: "/admin/work-control/work-forecast" },
     { name: "Groups", icon: "groups", path: "/admin/groups" },
   ]);
 
@@ -102,7 +96,7 @@ const Admin: React.FC = () => {
         const configs = await getBasicSidebarConfig();
         const menuMap = new Map(configs.map((c) => [c.path, c]));
         
-        // Update main menu with backend config (preserve Introduction and order)
+        // Update main menu with backend config while preserving menu order
         setMainMenu((prev) =>
           prev.map((item) => {
             const backendConfig = menuMap.get(item.path) as Partial<MenuItem> | undefined;
@@ -137,7 +131,6 @@ const Admin: React.FC = () => {
   const [personalMenu, setPersonalMenu] = useState<MenuItem[]>([
     { name: "Profile", icon: "Profile", path: "/admin/profile" },
     { name: "Learning Path", icon: "learning", path: "/admin/learning-path" },
-    { name: "Gamification", icon: "trophy", path: "/admin/gamification" },
     { name: "Settings", icon: "Settings", path: "/admin/settings" },
   ]);
 

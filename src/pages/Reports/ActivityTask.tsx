@@ -297,7 +297,6 @@ const ActivityLogs: React.FC = () => {
   const canViewCenters = !permissionsLoading && hasAnyPermission(PAGE_PERMISSIONS.CENTER_ADMIN_ONLY);
 
   const mainMenu = [
-    { name: "Introduction", icon: "introduction", path: "/dashboard/introduction" },
     { name: "Dashboard", icon: "dashboard", path: "/dashboard" },
     { name: "Projects", icon: "projects", path: "/dashboard/projects", badge: projectsCount },
     { name: "Reports", icon: "reports", path: "/dashboard/reports" },

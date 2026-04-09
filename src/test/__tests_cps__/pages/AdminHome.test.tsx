@@ -89,7 +89,6 @@ describe('AdminHome (production data flow)', () => {
     const { fetchMyBoards } = require('../../../api/boardApi');
     const { fetchTasksByBoard } = require('../../../api/taskApi');
     const { getAllGroups } = require('../../../api/groupApi');
-    const { getDeploymentHistory } = require('../../../api/deploymentApi');
 
     fetchAllUsers.mockResolvedValue({ data: { users: [{ _id: 'u1' }, { _id: 'u2' }] } });
     fetchMyBoards.mockResolvedValue({ data: [{ _id: 'b1', title: 'Board 1' }] });
@@ -115,22 +114,6 @@ describe('AdminHome (production data flow)', () => {
       ],
     });
     getAllGroups.mockResolvedValue({ data: [{ id: 'g1' }] });
-    getDeploymentHistory.mockResolvedValue({
-      success: true,
-      data: [
-        {
-          _id: 'dep1',
-          version: 'v1.2.3',
-          status: 'success',
-          environment: 'production',
-          commit_message: 'Deploy',
-          branch: 'main',
-          commit_hash: 'abcdef1',
-          deployed_by_username: 'ops',
-          deployed_at: new Date().toISOString(),
-        },
-      ],
-    });
 
     const AdminHomeProd = require('../../../pages/Admin/AdminHome').default;
     render(<AdminHomeProd />);
@@ -151,14 +134,5 @@ describe('AdminHome (production data flow)', () => {
     expect(screen.getByText(/\+\s*2(?!\d)/)).toBeInTheDocument();
     expect(screen.getByText(/Recent Admin Activities/i)).toBeInTheDocument();
     expect(screen.getByText(/Task 1 - Board 1/i)).toBeInTheDocument();
-  });
-
-  it('renders deployment history entries from API', async () => {
-    await setupWithData();
-
-    expect(screen.getByText(/GitHub Deployment History/i)).toBeInTheDocument();
-    expect(screen.getByText(/v1.2.3/i)).toBeInTheDocument();
-    expect(screen.getByText(/success/i)).toBeInTheDocument();
-    expect(screen.getByText(/abcdef1/i)).toBeInTheDocument();
   });
 });

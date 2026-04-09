@@ -57,10 +57,49 @@ export interface GenerateTaskDescriptionResponse {
   };
 }
 
+const extractErrorMessage = (error: any): string => {
+  const data = error?.response?.data;
+  if (typeof data?.error === 'string') return data.error;
+  if (typeof data?.message === 'string') return data.message;
+  if (typeof data?.errMsg === 'string') return data.errMsg;
+  if (typeof data?.error?.message === 'string') return data.error.message;
+  if (typeof error?.message === 'string') return error.message;
+  return 'Service is currently unstable, please try again later.';
+};
+
 export const generateTaskDescription = async (
   title: string,
   boardId?: string
 ): Promise<GenerateTaskDescriptionResponse> => {
-  const res = await axiosInstance.post("/nlp/propose", { title, boardId });
-  return res.data;
+  const maxAttempts = 3;
+  let lastError: any;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const res = await axiosInstance.post("/nlp/propose", { title, boardId });
+      return res.data;
+    } catch (error: any) {
+      lastError = error;
+      const message = extractErrorMessage(error).toLowerCase();
+      const isUnstable = message.includes('unstable') || message.includes('unavailable');
+      if (!isUnstable || attempt === maxAttempts) break;
+
+      // Simple backoff for transient AI provider instability
+      await new Promise((resolve) => setTimeout(resolve, attempt * 600));
+    }
+  }
+
+  const message = extractErrorMessage(lastError);
+  return {
+    status: 'error',
+    data: {
+      success: false,
+      title,
+      description: '',
+      acceptanceCriteria: [],
+      subtasks: [],
+      error: message,
+      message,
+    },
+  };
 };

@@ -13,7 +13,7 @@ const Landing: React.FC = () => {
 
   const handleLearnMore = () => {
     const isAdmin = location.pathname.startsWith('/admin');
-    navigate(isAdmin ? '/admin/introduction' : '/dashboard/introduction');
+    navigate(isAdmin ? '/admin' : '/dashboard');
   };
 
   return (

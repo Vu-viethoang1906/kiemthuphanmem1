@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "../../styles/BoardDetail/CreateTaskModal.css";
 import CommentSection, { TaskComment } from "../CommentSection";
-import ChecklistSection from "./ChecklistSection";
 import SubtaskList from "./SubtaskList";
 import { downloadFile, deleteFileFromTask, uploadFileToTask } from "../../api/fileApi";
 import {
@@ -10,9 +9,8 @@ import {
 } from "../../utils/datetimeUtils";
 import { useModal } from "../ModalProvider";
 import toast from "react-hot-toast";
-import { generateTaskDescription } from "../../api/aiApi";
 import { getAIRecommendations, LearningResource } from "../../api/learningResourceApi";
-import { Sparkles, Loader2, BookOpen, Video, Code, ExternalLink } from "lucide-react";
+import { Loader2, BookOpen, Video, Code, ExternalLink } from "lucide-react";
 
 type Task = {
   _id?: string;
@@ -102,7 +100,6 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
   const [isTagInputFocused, setIsTagInputFocused] = useState(false);
   const [isDeletingFile, setIsDeletingFile] = useState(false);
   const [commentedFiles, setCommentedFiles] = useState<CommentedFile[]>([]);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [learningResources, setLearningResources] = useState<{
     tutorials: Array<{ title: string; url: string; type?: string }>;
@@ -244,84 +241,10 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
           <div className="col-span-2 space-y-5 overflow-y-auto pr-2">
             {/* Title */}
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2">
                 <label className="block text-sm font-semibold text-gray-700">
                   Title <span className="text-red-500">*</span>
                 </label>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!editingTask.title || editingTask.title.trim() === "") {
-                      toast.error("Please enter a task title before using AI");
-                      return;
-                    }
-
-                    setIsGeneratingAI(true);
-                    try {
-                      const boardId = board?._id || board?.id;
-                      const response = await generateTaskDescription(
-                        editingTask.title,
-                        boardId
-                      );
-
-                      if (response.status === "success" && response.data.success) {
-                        const { description, acceptanceCriteria, subtasks } = response.data;
-
-                        // Cập nhật description
-                        let newDescription = description || "";
-
-                        // Thêm acceptance criteria nếu có
-                        if (acceptanceCriteria && acceptanceCriteria.length > 0) {
-                          newDescription += "\n\n**Tiêu chí chấp nhận:**\n";
-                          acceptanceCriteria.forEach((criteria, index) => {
-                            newDescription += `${index + 1}. ${criteria}\n`;
-                          });
-                        }
-
-                        // Thêm subtasks nếu có
-                        if (subtasks && subtasks.length > 0) {
-                          newDescription += "\n**Subtasks:**\n";
-                          subtasks.forEach((subtask, index) => {
-                            newDescription += `- [ ] ${subtask}\n`;
-                          });
-                        }
-
-                        onTaskChange({
-                          ...editingTask,
-                          description: newDescription.trim(),
-                        });
-                        toast.success("AI generated task description successfully!");
-                      } else {
-                        toast.error(
-                          response.data?.message || "Unable to generate description with AI"
-                        );
-                      }
-                    } catch (error: any) {
-                      console.error("Error generating task description:", error);
-                      toast.error(
-                        error?.response?.data?.error ||
-                        "Cannot connect to AI. Please try again."
-                      );
-                    } finally {
-                      setIsGeneratingAI(false);
-                    }
-                  }}
-                  disabled={isGeneratingAI || !editingTask.title || editingTask.title.trim() === ""}
-                  className="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 hover:from-purple-600 hover:via-pink-600 hover:to-indigo-600 text-white text-xs font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
-                  title="AI Generate Description"
-                >
-                  {isGeneratingAI ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>AI Generate</span>
-                    </>
-                  )}
-                </button>
               </div>
               <input
                 type="text"
@@ -350,25 +273,11 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({
               />
             </div>
 
-            {/* Checklist Section */}
-            {(editingTask._id || editingTask.id) && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Danh sách kiểm tra
-                </label>
-                <ChecklistSection
-                  taskId={editingTask._id || editingTask.id}
-                  onChecklistUpdate={undefined}
-                />
-              </div>
-            )}
-
             {/* Subtask Section */}
             {(editingTask._id || editingTask.id) && (
               <SubtaskList
                 taskId={(editingTask._id || editingTask.id) as string}
                 members={boardMembers}
-                onUpdate={onUpdate}
               />
             )}
 

@@ -14,7 +14,6 @@ describe('AdminHome page behavior (unskipped)', () => {
   it('renders optional headings if present', () => {
     render(<AdminHome />);
     screen.queryByText(/Recent Admin Activities/i);
-    screen.queryByText(/GitHub Deployment History/i);
     screen.queryByText(/Quick Admin Actions/i);
   });
 });

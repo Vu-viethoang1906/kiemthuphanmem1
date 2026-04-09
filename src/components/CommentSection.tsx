@@ -795,59 +795,6 @@ const CommentSection: React.FC<CommentSectionProps> = ({
             Comments ({comments.length})
           </h4>
         </div>
-        {comments.length > 0 && (
-          <button
-            onClick={handleSummarize}
-            disabled={isSummarizing}
-            style={{
-              padding: '6px 12px',
-              background: isSummarizing ? '#dadce0' : '#4285f4',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 500,
-              cursor: isSummarizing ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-            title="AI Tóm tắt comments"
-          >
-            {isSummarizing ? (
-              <>
-                <svg
-                  className="w-3 h-3 animate-spin"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <circle cx="12" cy="12" r="10" strokeDasharray="31.416" strokeDashoffset="31.416">
-                    <animate
-                      attributeName="stroke-dasharray"
-                      dur="2s"
-                      values="0 31.416;15.708 15.708;0 31.416;0 31.416"
-                      repeatCount="indefinite"
-                    />
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      dur="2s"
-                      values="0;-15.708;-31.416;-31.416"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                </svg>
-                <span>Đang tóm tắt...</span>
-              </>
-            ) : (
-              <>
-                <span>📋</span>
-                <span>AI Tóm tắt</span>
-              </>
-            )}
-          </button>
-        )}
       </div>
 
       {/* Summary Section */}

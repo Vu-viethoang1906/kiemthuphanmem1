@@ -102,7 +102,6 @@ const Dashboard = () => {
     !permissionsLoading && hasAnyPermission(PAGE_PERMISSIONS.CENTER_ADMIN_ONLY);
 
   const [mainMenu, setMainMenu] = useState([
-    { name: 'Introduction', icon: 'introduction', path: '/dashboard/introduction' },
     { name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
     { name: 'Projects', icon: 'projects', path: '/dashboard/projects', badge: projectsCount },
     { name: 'Backlog', icon: 'reports', iconUrl: '/icons/scrum.png', path: '/dashboard/backlog' },
@@ -122,14 +121,7 @@ const Dashboard = () => {
                 path: '/dashboard/analytics/teacher-throughput',
               },
               { name: 'Estimations', icon: 'reports', path: '/dashboard/analytics/estimations' },
-              { name: 'Completion', icon: 'reports', path: '/dashboard/analytics/completion' },
               { name: 'Gamification', icon: 'reports', path: '/dashboard/analytics/gamification' },
-              { name: 'Cycle Time', icon: 'reports', path: '/dashboard/analytics/cycle-time' },
-              {
-                name: 'Centers Performance',
-                icon: 'reports',
-                path: '/dashboard/analytics/centers-performance',
-              },
               {
                 name: 'Point Management',
                 icon: 'reports',
@@ -141,17 +133,6 @@ const Dashboard = () => {
                 path: '/dashboard/analytics/board-health-score',
               },
             ],
-          },
-        ]
-      : []),
-    // Show WorkControl only to admins/managers
-    ...(isAdminOrManager
-      ? [
-          {
-            name: 'WorkControl',
-            icon: 'reports',
-            iconUrl: '/icons/workcontrol.png',
-            path: '/dashboard/work-control/work-forecast',
           },
         ]
       : []),
@@ -168,7 +149,6 @@ const Dashboard = () => {
   const [personalMenu, setPersonalMenu] = useState([
     { name: 'Profile', icon: 'Profile', path: '/dashboard/profile' },
     { name: 'Learning Path', icon: 'learning', path: '/dashboard/learning-path' },
-    { name: 'Gamification', icon: 'trophy', path: '/dashboard/gamification' },
     { name: 'Settings', icon: 'Settings', path: '/dashboard/settings' },
   ]);
 
@@ -318,8 +298,6 @@ const Dashboard = () => {
     if (!isAdminOrManager) return [];
     return [
       { label: 'Throughput', path: '/dashboard/analytics/throughput' },
-      { label: 'Completion', path: '/dashboard/analytics/completion' },
-      { label: 'Cycle Time', path: '/dashboard/analytics/cycle-time' },
       { label: 'Health', path: '/dashboard/analytics/board-health-score' },
       { label: 'Risk', path: '/dashboard/analytics/at-risk' },
       { label: 'Points', path: '/dashboard/analytics/point-management' },

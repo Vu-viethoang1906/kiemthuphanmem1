@@ -52,7 +52,7 @@ export const convertBacklogItemsToBoard = async (payload: {
   itemIds: string[];
   boardId?: string;
   createWeeklyBoard?: boolean;
-  weekly?: { baseTitle?: string; startDate?: string };
+  weekly?: { baseTitle?: string; startDate?: string; title?: string; description?: string };
 }) => {
   const res = await axiosInstance.post(`/backlog/items/convert`, payload);
   return res.data;

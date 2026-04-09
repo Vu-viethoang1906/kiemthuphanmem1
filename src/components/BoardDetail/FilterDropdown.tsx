@@ -69,7 +69,19 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
                                 className={`filter-tag-item ${isSelected ? 'selected' : ''}`}
                             >
                                 <div className="filter-checkbox">
-                                    {isSelected && <span className="checkbox-check">✓</span>}
+                                    {isSelected && (
+                                        <svg
+                                            className="checkbox-check-icon"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="3"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
                                 </div>
                                 <div 
                                     className="filter-tag-color"

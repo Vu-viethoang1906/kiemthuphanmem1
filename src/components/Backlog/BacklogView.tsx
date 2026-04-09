@@ -23,8 +23,12 @@ import {
 import { fetchMyBoards } from "../../api/boardApi";
 import BacklogTaskItem from "./BacklogTaskItem";
 import toast from "react-hot-toast";
+import { useLocation, useNavigate } from "react-router-dom";
+import { invalidateBoardCache } from "../../utils/boardCache";
 
 const BacklogView: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -37,6 +41,8 @@ const BacklogView: React.FC = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newPriority, setNewPriority] = useState<"High" | "Medium" | "Low">("Medium");
   const [newPoints, setNewPoints] = useState<number | "">("");
+  const [weeklyBoardTitle, setWeeklyBoardTitle] = useState("");
+  const [weeklyBoardDescription, setWeeklyBoardDescription] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -136,6 +142,7 @@ const BacklogView: React.FC = () => {
         boardId: selectedBoardId,
       });
       if (res?.success) {
+        invalidateBoardCache();
         toast.success("Tasks created in board");
         setSelectedIds([]);
         await fetchTasks();
@@ -153,12 +160,28 @@ const BacklogView: React.FC = () => {
       const res: any = await convertBacklogItemsToBoard({
         itemIds: selectedIds,
         createWeeklyBoard: true,
-        weekly: { baseTitle: "Sprint" },
+        weekly: {
+          baseTitle: "Sprint",
+          title: weeklyBoardTitle.trim() || undefined,
+          description: weeklyBoardDescription.trim() || undefined,
+        },
       });
       if (res?.success) {
+        invalidateBoardCache();
         toast.success("Weekly board created and tasks moved");
         setSelectedIds([]);
+        setWeeklyBoardTitle("");
+        setWeeklyBoardDescription("");
         await fetchTasks();
+
+        const createdBoardId = res?.data?.board_id || res?.data?.board?._id;
+        if (createdBoardId) {
+          const isAdminRoute = location.pathname.startsWith("/admin");
+          const targetPath = isAdminRoute
+            ? `/admin/project/${createdBoardId}`
+            : `/dashboard/project/${createdBoardId}`;
+          navigate(targetPath);
+        }
       } else {
         toast.error(res?.message || "Failed");
       }
@@ -247,6 +270,22 @@ const BacklogView: React.FC = () => {
               Start weekly board
             </button>
           </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="text"
+            placeholder="Weekly board name (optional)"
+            value={weeklyBoardTitle}
+            onChange={(e) => setWeeklyBoardTitle(e.target.value)}
+            className="min-w-[260px] flex-1 px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <input
+            type="text"
+            placeholder="Board description (optional)"
+            value={weeklyBoardDescription}
+            onChange={(e) => setWeeklyBoardDescription(e.target.value)}
+            className="min-w-[260px] flex-1 px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
         </div>
       </div>
 

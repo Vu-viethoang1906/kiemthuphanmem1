@@ -30,13 +30,11 @@ interface Subtask {
 interface SubtaskListProps {
     taskId: string;
     members: any[];
-    onUpdate?: () => void;
 }
 
 const SubtaskList: React.FC<SubtaskListProps> = ({
     taskId,
     members,
-    onUpdate,
 }) => {
     const [subtasks, setSubtasks] = useState<Subtask[]>([]);
     const [progress, setProgress] = useState({ completed: 0, total: 0, percentage: 0 });
@@ -79,8 +77,6 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
                 toast.success("Subtask created successfully!");
                 await loadSubtasks();
                 setShowAddForm(false);
-                // Only reload task when creating new subtask
-                if (onUpdate) onUpdate();
             }
         } catch (error: any) {
             console.error("Error creating subtask:", error);
@@ -119,8 +115,6 @@ const SubtaskList: React.FC<SubtaskListProps> = ({
             if (response.success) {
                 toast.success("Subtask deleted successfully!");
                 await loadSubtasks();
-                // Only reload task when deleting subtask
-                if (onUpdate) onUpdate();
             }
         } catch (error: any) {
             console.error("Error deleting subtask:", error);

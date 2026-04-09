@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
 import { fetchTemplates } from '../../api/templateApi';
-import SupportCenter from '../../components/SupportCenter';
-import DocumentationModal from '../../components/DocumentationModal';
 import {
   cloneBoardFromTemplate,
   fetchMyBoards,
@@ -95,12 +93,6 @@ const Projects: React.FC = () => {
   // Template Preview Modal states
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-
-  // Support Center Modal state
-  const [showSupportCenter, setShowSupportCenter] = useState(false);
-
-  // Documentation Modal state
-  const [showDocumentation, setShowDocumentation] = useState(false);
 
   // Activity Feed state
   const [activities, setActivities] = useState<any[]>([]);
@@ -291,18 +283,21 @@ const Projects: React.FC = () => {
     loadBoards();
   }, [currentPage, searchTerm]);
 
-  const loadBoards = async (forceRefresh?: boolean) => {
+  const loadBoards = async (
+    forceRefresh?: boolean,
+    overrides?: { page?: number; search?: string; limit?: number },
+  ) => {
     try {
       setLoadingBoards(true);
       setHasPermissionError(false);
 
       // 🔥 Server-side pagination with search
       const fetchParams: any = {
-        page: currentPage,
-        limit: itemsPerPage,
+        page: overrides?.page ?? currentPage,
+        limit: overrides?.limit ?? itemsPerPage,
         sortBy: 'created_at',
         sortOrder: 'desc',
-        search: searchTerm || undefined,
+        search: (overrides?.search ?? searchTerm) || undefined,
       };
 
       // Add a cache-busting param when a fresh fetch is requested
@@ -609,23 +604,79 @@ const Projects: React.FC = () => {
       }
 
       try {
+        // Snapshot current boards before import to detect newly created board reliably
+        const beforeBoardsRes = await fetchMyBoards({
+          page: 1,
+          limit: 200,
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+        });
+        const beforeBoardIds = new Set(
+          (beforeBoardsRes?.data || [])
+            .map((board: any) => String(board?._id || board?.id || ''))
+            .filter(Boolean),
+        );
+
         // If backend has import endpoint, send file to it
         const formData = new FormData();
         formData.append('file', file);
 
-        const res = await importFileTask(formData);
+        const derivedBoardName = file.name.replace(/\.[^/.]+$/, '').trim();
+        const res = await importFileTask(formData, {
+          createNewBoard: true,
+          boardName: derivedBoardName || undefined,
+        });
+        const importedCount =
+          Number(res?.count) ||
+          Number(res?.data?.successCount) ||
+          Number(res?.successCount) ||
+          0;
+        const importedBoards =
+          res?.importedBoards ||
+          res?.data?.importedBoards ||
+          [];
 
         toast.success(
           <div>
             <div className="font-semibold mb-1">Data imported successfully!</div>
-            <div className="text-sm text-gray-500">Data has been added to the system.</div>
+            <div className="text-sm text-gray-500">
+              Imported {importedCount} task{importedCount === 1 ? '' : 's'} to{' '}
+              {importedBoards.length || 0} board{importedBoards.length === 1 ? '' : 's'}.
+            </div>
           </div>,
         );
 
         // Invalidate board cache so newly imported boards are fetched from server
         invalidateBoardCache();
-        // Reload boards after successful import (force refresh to bypass any stale cache)
-        await loadBoards(true);
+        // Ensure new board is visible even if user is on another page or has active search filter
+        setUrlState({ ...urlState, page: '1', q: '', limit: '100' }, true);
+        await loadBoards(true, { page: 1, search: '', limit: 100 });
+
+        // 1) If backend returns imported boards, open the first one directly
+        const firstImportedBoardId = importedBoards?.[0]?.id;
+        if (firstImportedBoardId) {
+          localStorage.setItem('lastOpenedBoardId', firstImportedBoardId);
+          navigate(`/project/${firstImportedBoardId}`);
+          return;
+        }
+
+        // 2) Fallback: compare board list before/after import to find newly created board
+        const afterBoardsRes = await fetchMyBoards({
+          page: 1,
+          limit: 200,
+          sortBy: 'created_at',
+          sortOrder: 'desc',
+        });
+        const afterBoards = Array.isArray(afterBoardsRes?.data) ? afterBoardsRes.data : [];
+        const newlyCreatedBoard = afterBoards.find(
+          (board: any) => !beforeBoardIds.has(String(board?._id || board?.id || '')),
+        );
+
+        if (newlyCreatedBoard?._id || newlyCreatedBoard?.id) {
+          const boardId = String(newlyCreatedBoard._id || newlyCreatedBoard.id);
+          localStorage.setItem('lastOpenedBoardId', boardId);
+          navigate(`/project/${boardId}`);
+        }
       } catch (err: any) {
         // 🔥 Check permission errors
         if (err?.response?.status === 403) {
@@ -681,28 +732,6 @@ const Projects: React.FC = () => {
 
             {/* Right Side Buttons */}
             <div className="flex items-center gap-3 sm:gap-4 lg:gap-6">
-              {/* Text Links Group */}
-              <div className="hidden md:flex items-center gap-4 lg:gap-6">
-                <button
-                  onClick={() => setShowDocumentation(true)}
-                  className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Documentation
-                </button>
-                <button className="hidden lg:block text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors">
-                  Community
-                </button>
-                <button
-                  onClick={() => setShowSupportCenter(true)}
-                  className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                >
-                  Support
-                </button>
-              </div>
-
-              {/* Divider */}
-              <div className="hidden md:block h-6 w-px bg-gray-300"></div>
-
               {/* Action Buttons Group */}
               <div className="flex items-center gap-2 sm:gap-3">
                 {/* Import Button */}
@@ -1592,11 +1621,6 @@ const Projects: React.FC = () => {
         </div>
       )}
 
-      {/* Support Center Modal */}
-      {showSupportCenter && <SupportCenter onClose={() => setShowSupportCenter(false)} />}
-
-      {/* Documentation Modal */}
-      {showDocumentation && <DocumentationModal onClose={() => setShowDocumentation(false)} />}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Chart, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -22,22 +22,12 @@ import {
   TrendingDown,
   ArrowUp,
   ArrowDown,
-  GitBranch,
-  CheckCircle,
-  XCircle,
-  Clock,
-  RotateCcw,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAllUsers } from '../../api/userApi';
 import { fetchMyBoards } from '../../api/boardApi';
 import { fetchTasksByBoard } from '../../api/taskApi';
 import { getAllGroups } from '../../api/groupApi';
-import {
-  getDeploymentHistory,
-  getCurrentProductionDeployment,
-  Deployment,
-} from '../../api/deploymentApi';
 import { getAllCenters } from '../../api/centerApi';
 
 // Register Chart.js components
@@ -54,13 +44,19 @@ ChartJS.register(
   Filler,
 );
 
+const ADMIN_DASHBOARD_BOARD_STORAGE_KEY = 'adminDashboardSelectedBoardId';
+
 const AdminHome: React.FC = () => {
   const navigate = useNavigate();
   const isTestEnv = process.env.NODE_ENV === 'test';
   const [loading, setLoading] = useState(true);
   const [boards, setBoards] = useState<any[]>([]);
   const [centers, setCenters] = useState<any[]>([]);
-  const [selectedBoardId, setSelectedBoardId] = useState<string>('');
+  const [selectedBoardId, setSelectedBoardId] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    const savedBoardId = window.localStorage.getItem(ADMIN_DASHBOARD_BOARD_STORAGE_KEY);
+    return savedBoardId ?? '';
+  });
   const [selectedCenterId, setSelectedCenterId] = useState<string>('');
   const [dateRange, setDateRange] = useState({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -77,14 +73,11 @@ const AdminHome: React.FC = () => {
   });
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [allTasks, setAllTasks] = useState<any[]>([]);
-  const [deployments, setDeployments] = useState<Deployment[]>([]);
-  const [deploymentError, setDeploymentError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const loadRequestIdRef = useRef(0);
   const analyticsShortcuts = useMemo(
     () => [
       { label: 'Throughput', path: '/admin/analytics/throughput' },
-      { label: 'Completion', path: '/admin/analytics/completion' },
-      { label: 'Cycle Time', path: '/admin/analytics/cycle-time' },
-      { label: 'Centers', path: '/admin/analytics/centers-performance' },
       { label: 'Health', path: '/admin/analytics/board-health-score' },
       { label: 'Points', path: '/admin/analytics/point-management' },
       { label: 'Risk', path: '/admin/analytics/at-risk' },
@@ -95,12 +88,16 @@ const AdminHome: React.FC = () => {
 
   // Load real admin data
   useEffect(() => {
+    const requestId = ++loadRequestIdRef.current;
+    const isStaleRequest = () => requestId !== loadRequestIdRef.current;
+
     const loadAdminData = async () => {
       try {
         setLoading(true);
 
         // Short-circuit in test runs to avoid network calls and render quickly
         if (isTestEnv) {
+          if (isStaleRequest()) return;
           setStats({
             totalUsers: 3,
             activeProjects: 2,
@@ -120,13 +117,13 @@ const AdminHome: React.FC = () => {
               avatar: 'TA',
             },
           ]);
-          setDeployments([]);
           setLoading(false);
           return;
         }
 
         // Fetch all users
         const usersRes = await fetchAllUsers(1, 1000);
+        if (isStaleRequest()) return;
         let users: any[] = [];
         if (usersRes?.data?.users) {
           users = usersRes.data.users;
@@ -160,6 +157,7 @@ const AdminHome: React.FC = () => {
 
         // Fetch boards
         const boardsRes = await fetchMyBoards();
+        if (isStaleRequest()) return;
         let boards: any[] = [];
         if (boardsRes?.data?.data) {
           boards = boardsRes.data.data;
@@ -169,24 +167,38 @@ const AdminHome: React.FC = () => {
           boards = boardsRes;
         }
         setBoards(boards);
-        if (boards.length > 0 && !selectedBoardId) {
+        const selectedBoardStillExists = boards.some(
+          (board: any) => (board._id || board.id) === selectedBoardId,
+        );
+        if (boards.length > 0 && (!selectedBoardId || !selectedBoardStillExists)) {
+          // Keep previous selection when valid, otherwise fallback to first available board.
           setSelectedBoardId(boards[0]._id || boards[0].id || '');
+          return;
         }
 
-        // Fetch tasks for all boards
+        // Fetch tasks based on selected board (or all when "All" is chosen)
         let tasks: any[] = [];
-        if (boards.length > 0) {
+        const selectedBoards = selectedBoardId
+          ? boards.filter((board: any) => (board._id || board.id) === selectedBoardId)
+          : boards;
+
+        if (selectedBoards.length > 0) {
           await Promise.all(
-            boards.map(async (board: any) => {
+            selectedBoards.map(async (board: any) => {
               try {
                 const tasksRes = await fetchTasksByBoard(board._id || board.id);
+                if (isStaleRequest()) return;
                 let boardTasks = [];
                 if (tasksRes?.data) {
                   boardTasks = Array.isArray(tasksRes.data) ? tasksRes.data : [tasksRes.data];
                 } else if (Array.isArray(tasksRes)) {
                   boardTasks = tasksRes;
                 }
-                tasks = [...tasks, ...boardTasks];
+                const normalizedTasks = boardTasks.map((task: any) => ({
+                  ...task,
+                  board_id: task.board_id || task.boardId || board._id || board.id,
+                }));
+                tasks = [...tasks, ...normalizedTasks];
               } catch (error) {
                 console.error(`Failed to load tasks for board ${board._id}:`, error);
               }
@@ -194,6 +206,7 @@ const AdminHome: React.FC = () => {
           );
         }
 
+        if (isStaleRequest()) return;
         setAllTasks(tasks);
 
         // Calculate statistics - using same logic as Reports page
@@ -223,6 +236,7 @@ const AdminHome: React.FC = () => {
         if (!isTestEnv) {
           try {
             const groupsRes = await getAllGroups({ page: 1, limit: 1000 });
+            if (isStaleRequest()) return;
             if (Array.isArray(groupsRes?.data)) {
               totalGroups = groupsRes.data.length;
             } else if (Array.isArray(groupsRes)) {
@@ -235,10 +249,11 @@ const AdminHome: React.FC = () => {
           }
         }
 
+        if (isStaleRequest()) return;
         setStats({
           totalUsers: uniqueUsers.length,
-          activeProjects: boards.length,
-          totalBoards: boards.length,
+          activeProjects: selectedBoards.length,
+          totalBoards: selectedBoards.length,
           totalTasks: tasks.length,
           pendingApprovals,
           completedTasks,
@@ -257,7 +272,8 @@ const AdminHome: React.FC = () => {
         const activities = sortedTasks.map((task: any) => {
           const userName = task.created_by?.full_name || task.created_by?.username || 'System';
           const boardName =
-            boards.find((b: any) => (b._id || b.id) === task.board_id)?.title || 'Unknown Board';
+            boards.find((b: any) => (b._id || b.id) === (task.board_id || task.boardId))?.title ||
+            'Unknown Board';
           const timeAgo = getTimeAgo(new Date(task.updated_at || task.created_at));
 
           return {
@@ -275,95 +291,22 @@ const AdminHome: React.FC = () => {
           };
         });
 
+        if (isStaleRequest()) return;
         setRecentActivities(activities);
 
-        // Skip long-running, non-essential fetches in unit tests
-        if (process.env.NODE_ENV === 'test') {
-          return;
-        }
-
-        // Fetch deployment history
-        try {
-          setDeploymentError(null);
-          const deploymentRes = await getDeploymentHistory({ limit: 5, sortOrder: 'desc' });
-          console.log('Deployment response:', deploymentRes);
-
-          // Handle different response structures
-          let deploymentsData: Deployment[] = [];
-
-          if (deploymentRes?.success) {
-            if (Array.isArray(deploymentRes?.data)) {
-              deploymentsData = deploymentRes.data;
-            } else {
-              // Handle case where data might have nested structure
-              const data = deploymentRes.data as any;
-              if (data?.deployments && Array.isArray(data.deployments)) {
-                deploymentsData = data.deployments;
-              }
-            }
-          } else if (Array.isArray(deploymentRes)) {
-            deploymentsData = deploymentRes;
-          } else {
-            const data = (deploymentRes as any)?.data;
-            if (Array.isArray(data)) {
-              deploymentsData = data;
-            }
-          }
-
-          console.log('Parsed deployments:', deploymentsData);
-
-          // If history is empty, try to get current production deployment
-          if (deploymentsData.length === 0) {
-            try {
-              const currentDeploymentRes = await getCurrentProductionDeployment();
-              console.log('Current deployment response:', currentDeploymentRes);
-
-              if (currentDeploymentRes?.success && currentDeploymentRes?.data?.deployment) {
-                const currentDeployment = currentDeploymentRes.data.deployment as any;
-                // Convert current deployment to Deployment format
-                const deployment: Deployment = {
-                  _id: currentDeployment._id || 'current',
-                  version: currentDeployment.version || '',
-                  environment: currentDeployment.environment || 'production',
-                  branch: currentDeployment.branch,
-                  commit_hash: currentDeployment.commit_hash || currentDeployment.version,
-                  commit_message: currentDeployment.commit_message,
-                  deployed_by: currentDeployment.deployed_by,
-                  deployed_by_username: currentDeployment.deployed_by_username,
-                  status: currentDeployment.status || 'success',
-                  deployed_at:
-                    currentDeployment.deployed_at ||
-                    currentDeployment.createdAt ||
-                    new Date().toISOString(),
-                  notes: currentDeployment.notes,
-                  build_info: currentDeployment.build_info,
-                };
-                deploymentsData = [deployment];
-                console.log('Using current deployment:', deployment);
-              }
-            } catch (currentError) {
-              console.error('Failed to load current deployment:', currentError);
-            }
-          }
-
-          setDeployments(deploymentsData);
-        } catch (error: any) {
-          console.error('Failed to load deployment history:', error);
-          console.error('Error details:', error.response?.data || error.message);
-          setDeploymentError(
-            error.response?.data?.message || error.message || 'Failed to load deployment history',
-          );
-          setDeployments([]);
-        }
       } catch (error) {
-        console.error('Failed to load admin data:', error);
+        if (!isStaleRequest()) {
+          console.error('Failed to load admin data:', error);
+        }
       } finally {
-        setLoading(false);
+        if (!isStaleRequest()) {
+          setLoading(false);
+        }
       }
     };
 
     loadAdminData();
-  }, [selectedBoardId]);
+  }, [selectedBoardId, refreshTick]);
 
   useEffect(() => {
     const loadCenters = async () => {
@@ -380,6 +323,11 @@ const AdminHome: React.FC = () => {
     };
     loadCenters();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(ADMIN_DASHBOARD_BOARD_STORAGE_KEY, selectedBoardId);
+  }, [selectedBoardId]);
 
   // Helper function to calculate time ago
   const getTimeAgo = (date: Date) => {
@@ -632,6 +580,9 @@ const AdminHome: React.FC = () => {
 
     // Also dispatch the dashboard event so the existing dashboard listeners react
     window.dispatchEvent(new CustomEvent('dashboard-analytics-refresh', { detail }));
+
+    // Refresh this page data immediately
+    setRefreshTick((prev) => prev + 1);
   };
 
   if (isTestEnv) {
@@ -1012,146 +963,31 @@ const AdminHome: React.FC = () => {
           </div>
         </div>
 
-        {/* Recent Activities and Deployment History Section */}
+        {/* Recent Activities Section */}
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-[2px]">
-            {/* Recent Activities - Left side (30%) */}
-            <div className="lg:col-span-1 lg:border-r lg:border-gray-300 lg:pr-6">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-semibold text-gray-900">Recent Admin Activities</h3>
-                <span className="text-xs text-gray-500">Last 24h</span>
-              </div>
-              <div className="space-y-4">
-                {recentActivities.length === 0 ? (
-                  <p className="text-sm text-gray-500">No recent activity recorded.</p>
-                ) : (
-                  recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex gap-3">
-                      <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
-                        {activity.avatar}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-900">
-                          <span className="font-semibold">{activity.admin}</span> {activity.action}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">{activity.user}</p>
-                        <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Deployment History - Right side (70%) */}
-            <div className="lg:col-span-2 lg:pl-6">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-semibold text-gray-900">GitHub Deployment History</h3>
-                <span className="text-xs text-gray-500">Recent deployments</span>
-              </div>
-              <div className="space-y-3">
-                {deploymentError ? (
-                  <div className="p-3 bg-red-50 border border-red-200">
-                    <p className="text-sm text-red-700">Error: {deploymentError}</p>
-                    <p className="text-xs text-red-600 mt-1">Check console for details</p>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-lg font-semibold text-gray-900">Recent Admin Activities</h3>
+            <span className="text-xs text-gray-500">Last 24h</span>
+          </div>
+          <div className="space-y-4">
+            {recentActivities.length === 0 ? (
+              <p className="text-sm text-gray-500">No recent activity recorded.</p>
+            ) : (
+              recentActivities.map((activity) => (
+                <div key={activity.id} className="flex gap-3 border border-gray-200 p-3">
+                  <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+                    {activity.avatar}
                   </div>
-                ) : deployments.length === 0 ? (
-                  <p className="text-sm text-gray-500">No deployment history available.</p>
-                ) : (
-                  deployments.map((deployment) => {
-                    const getStatusIcon = () => {
-                      switch (deployment.status) {
-                        case 'success':
-                          return <CheckCircle className="w-4 h-4 text-green-500" />;
-                        case 'failed':
-                          return <XCircle className="w-4 h-4 text-red-500" />;
-                        case 'in_progress':
-                          return <Clock className="w-4 h-4 text-yellow-500" />;
-                        case 'rolled_back':
-                          return <RotateCcw className="w-4 h-4 text-orange-500" />;
-                        default:
-                          return <Clock className="w-4 h-4 text-gray-500" />;
-                      }
-                    };
-
-                    const getStatusColor = () => {
-                      switch (deployment.status) {
-                        case 'success':
-                          return 'bg-green-100 text-green-700';
-                        case 'failed':
-                          return 'bg-red-100 text-red-700';
-                        case 'in_progress':
-                          return 'bg-yellow-100 text-yellow-700';
-                        case 'rolled_back':
-                          return 'bg-orange-100 text-orange-700';
-                        default:
-                          return 'bg-gray-100 text-gray-700';
-                      }
-                    };
-
-                    const formatDate = (dateString: string) => {
-                      const date = new Date(dateString);
-                      const now = new Date();
-                      const diffMs = now.getTime() - date.getTime();
-                      const diffMins = Math.floor(diffMs / 60000);
-                      const diffHours = Math.floor(diffMs / 3600000);
-                      const diffDays = Math.floor(diffMs / 86400000);
-
-                      if (diffMins < 60) return `${diffMins} minutes ago`;
-                      if (diffHours < 24) return `${diffHours} hours ago`;
-                      if (diffDays < 7) return `${diffDays} days ago`;
-                      return date.toLocaleDateString();
-                    };
-
-                    return (
-                      <div
-                        key={deployment._id}
-                        className="flex items-start gap-3 p-3 border border-gray-200 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex-shrink-0 mt-1">{getStatusIcon()}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-semibold text-gray-900">
-                              {deployment.version || deployment.commit_hash?.slice(0, 7) || 'N/A'}
-                            </span>
-                            <span className={`text-xs font-medium px-2 py-0.5 ${getStatusColor()}`}>
-                              {deployment.status}
-                            </span>
-                            <span className="text-xs text-gray-500 capitalize">
-                              {deployment.environment}
-                            </span>
-                          </div>
-                          {deployment.commit_message && (
-                            <p className="text-xs text-gray-600 mb-1 truncate">
-                              {deployment.commit_message}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
-                            {deployment.branch && (
-                              <div className="flex items-center gap-1">
-                                <GitBranch className="w-3 h-3" />
-                                <span>{deployment.branch}</span>
-                              </div>
-                            )}
-                            {deployment.commit_hash && (
-                              <span className="font-mono">
-                                {deployment.commit_hash.slice(0, 7)}
-                              </span>
-                            )}
-                            {deployment.deployed_by_username && (
-                              <span>by {deployment.deployed_by_username}</span>
-                            )}
-                            {deployment.deployed_at && (
-                              <span>• {formatDate(deployment.deployed_at)}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-900">
+                      <span className="font-semibold">{activity.admin}</span> {activity.action}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{activity.user}</p>
+                    <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

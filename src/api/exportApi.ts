@@ -43,6 +43,42 @@ export interface ExportedFileItem {
   expiresAt: string;
 }
 
+export interface SendReportEmailPayload {
+  report_type: ExportReportParams['report_type'];
+  format: ExportReportParams['format'];
+  board_id?: string;
+  center_id?: string;
+  start_date?: string;
+  end_date?: string;
+  granularity?: ExportReportParams['granularity'];
+  wipLimit?: number;
+  limit?: number;
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject?: string;
+  message?: string;
+}
+
+export interface SendReportEmailResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    filename: string;
+    reportType: string;
+    format: string;
+    recipients: { to: string[]; cc: string[]; bcc: string[] };
+    sentAt: string;
+  };
+}
+
+export const sendReportByEmail = async (
+  payload: SendReportEmailPayload,
+): Promise<SendReportEmailResponse> => {
+  const response = await axiosInstance.post('/export/send-email', payload);
+  return response.data;
+};
+
 export const listExportFiles = async (): Promise<{ success: boolean; data: ExportedFileItem[] }> => {
   const response = await axiosInstance.get('/export/exports/list');
   return response.data;

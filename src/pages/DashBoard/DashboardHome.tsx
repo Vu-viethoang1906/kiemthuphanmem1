@@ -496,35 +496,6 @@ const DashboardHome: React.FC = () => {
             <button
               onClick={() =>
                 navigate(
-                  `/dashboard/analytics/completion${
-                    analyticsContext.boardId ? `?board=${analyticsContext.boardId}` : ''
-                  }`,
-                )
-              }
-              className="relative overflow-hidden rounded-none p-5 text-left shadow-lg shadow-emerald-200/60 ring-1 ring-emerald-300/70 bg-white/80 backdrop-blur hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-300/80 hover:ring-emerald-400 transition-all duration-300 group"
-            >
-              <div className="absolute right-4 top-4 w-10 h-10 text-2xl text-emerald-700 drop-shadow-lg flex items-center justify-center bg-white/40 rounded-xl">
-                ✅
-              </div>
-              <div className="relative z-10 space-y-2">
-                <p className="text-xs uppercase tracking-wide text-emerald-800/80">
-                  Completion rate
-                </p>
-                <h2 className="text-3xl font-extrabold text-emerald-950 drop-shadow-sm">
-                  {Number(stats.completionRate)?.toFixed
-                    ? Number(stats.completionRate).toFixed(1)
-                    : stats.completionRate}
-                  %
-                </h2>
-                <p className="text-xs text-emerald-900/70">
-                  {stats.tasksCompletedThisWeek} tasks completed this week
-                </p>
-              </div>
-            </button>
-
-            <button
-              onClick={() =>
-                navigate(
                   `/dashboard/analytics/at-risk${
                     analyticsContext.boardId ? `?board=${analyticsContext.boardId}` : ''
                   }`,

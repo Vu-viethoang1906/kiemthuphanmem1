@@ -14,7 +14,6 @@ import MaintenanceGuard from './components/MaintenanceGuard';
 import Dashboard from './pages/DashBoard/Dashboard';
 import BoardMembersPage from './pages/Board/BoardMembersPage';
 import DashboardHome from './pages/DashBoard/DashboardHome';
-import Introduction from './pages/Introduction/Introduction';
 import Landing from './pages/Landing/Landing';
 import Projects from './pages/Project/Projects';
 import Groups from './pages/Group/Groups';
@@ -47,19 +46,13 @@ import LogByUser from './pages/Reports/LogByUser';
 import Throughput from './pages/Analytics/Throughput';
 import TeacherEstimations from './pages/Analytics/TeacherEstimations';
 import TeacherThroughput from './pages/Analytics/TeacherThroughput';
-import Completion from './pages/Analytics/Completion';
 import Gamification from './pages/Analytics/Gamification';
-import CycleTime from './pages/Analytics/CycleTime';
-import CentersPerformance from './pages/Analytics/CentersPerformance';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 
 import PointManagement from './pages/Analytics/PointManagement';
 import BoardHealthScore from './pages/Analytics/BoardHealthScore';
 import AtRiskTasks from './pages/Analytics/AtRiskTasks';
-import WorkControl from './pages/QualityControl/WorkControl';
 import LearningPath from './pages/Learning/LearningPath';
-import AdaptiveGamification from './pages/Gamification/AdaptiveGamification';
-import ScheduledReports from './pages/Reports/ScheduledReports';
 import BacklogPage from './pages/Backlog/BacklogPage';
 
 // Component để redirect /calendar callback về Settings
@@ -147,7 +140,6 @@ function AnimatedRoutes() {
       <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" replace />}>
         <Route index element={<DashboardHome />} />
         <Route path="landing" element={<Landing />} />
-        <Route path="introduction" element={<Introduction />} />
         <Route path="projects" element={<Projects />} />
         <Route path="groups" element={<Groups />} />
         <Route path="groups/:groupId" element={<Groups />} />
@@ -156,16 +148,11 @@ function AnimatedRoutes() {
         <Route path="analytics/throughput" element={<Throughput />} />
         <Route path="analytics/teacher-throughput" element={<TeacherThroughput />} />
         <Route path="analytics/estimations" element={<TeacherEstimations />} />
-        <Route path="analytics/completion" element={<Completion />} />
         <Route path="analytics/gamification" element={<Gamification />} />
-        <Route path="analytics/cycle-time" element={<CycleTime />} />
-        <Route path="analytics/centers-performance" element={<CentersPerformance />} />
         <Route path="analytics/point-management" element={<PointManagement />} />
         <Route path="analytics/board-health-score" element={<BoardHealthScore />} />
         <Route path="analytics/at-risk" element={<AtRiskTasks />} />
-        <Route path="work-control/*" element={<WorkControl />} />
         <Route path="learning-path" element={<LearningPath />} />
-        <Route path="gamification" element={<AdaptiveGamification />} />
         <Route path="settings" element={<Settings />} />
         <Route path="profile" element={<UserProfilePage />} />
         <Route
@@ -220,8 +207,6 @@ function AnimatedRoutes() {
       >
         <Route index element={<AdminHome />} />
         <Route path="landing" element={<Landing />} />
-
-        <Route path="introduction" element={<Introduction />} />
         <Route path="projects" element={<Projects />} />
         <Route path="groups" element={<Groups />} />
         <Route path="groups/:groupId" element={<Groups />} />
@@ -230,17 +215,11 @@ function AnimatedRoutes() {
         <Route path="analytics/throughput" element={<Throughput />} />
         <Route path="analytics/teacher-throughput" element={<TeacherThroughput />} />
         <Route path="analytics/estimations" element={<TeacherEstimations />} />
-        <Route path="analytics/completion" element={<Completion />} />
         <Route path="analytics/gamification" element={<Gamification />} />
-        <Route path="analytics/cycle-time" element={<CycleTime />} />
-        <Route path="analytics/centers-performance" element={<CentersPerformance />} />
         <Route path="analytics/point-management" element={<PointManagement />} />
         <Route path="analytics/board-health-score" element={<BoardHealthScore />} />
         <Route path="analytics/at-risk" element={<AtRiskTasks />} />
-        <Route path="work-control/*" element={<WorkControl />} />
-        <Route path="reports/scheduled" element={<ScheduledReports />} />
         <Route path="learning-path" element={<LearningPath />} />
-        <Route path="gamification" element={<AdaptiveGamification />} />
         <Route path="activity-logs" element={<ActivityLogs />} />
         <Route path="settings" element={<Settings />} />
         <Route path="profile" element={<UserProfilePage />} />
@@ -370,6 +349,62 @@ function AnimatedRoutes() {
 
       <Route path="project/:id/history" element={<ActivityTask />} />
       <Route path="/user/logUser" element={<LogByUser />} />
+      <Route
+        path="/dashboard/introduction"
+        element={<Navigate to="/dashboard" replace />}
+      />
+      <Route
+        path="/admin/introduction"
+        element={<Navigate to="/admin" replace />}
+      />
+      <Route
+        path="/dashboard/gamification"
+        element={<Navigate to="/dashboard" replace />}
+      />
+      <Route
+        path="/dashboard/analytics/completion"
+        element={<Navigate to="/dashboard/analytics/throughput" replace />}
+      />
+      <Route
+        path="/dashboard/analytics/cycle-time"
+        element={<Navigate to="/dashboard/analytics/throughput" replace />}
+      />
+      <Route
+        path="/dashboard/analytics/centers-performance"
+        element={<Navigate to="/dashboard/analytics/throughput" replace />}
+      />
+      <Route
+        path="/admin/gamification"
+        element={<Navigate to="/admin" replace />}
+      />
+      <Route
+        path="/admin/analytics/completion"
+        element={<Navigate to="/admin/analytics/throughput" replace />}
+      />
+      <Route
+        path="/admin/analytics/cycle-time"
+        element={<Navigate to="/admin/analytics/throughput" replace />}
+      />
+      <Route
+        path="/admin/analytics/centers-performance"
+        element={<Navigate to="/admin/analytics/throughput" replace />}
+      />
+      <Route
+        path="/admin/reports/scheduled"
+        element={<Navigate to="/admin/reports" replace />}
+      />
+      <Route
+        path="/dashboard/reports/scheduled"
+        element={<Navigate to="/dashboard/reports" replace />}
+      />
+      <Route
+        path="/admin/reports/share"
+        element={<Navigate to="/admin/reports" replace />}
+      />
+      <Route
+        path="/dashboard/reports/share"
+        element={<Navigate to="/dashboard/reports" replace />}
+      />
     </Routes>
   );
 }
